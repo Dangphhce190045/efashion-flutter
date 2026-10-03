@@ -31,27 +31,31 @@ class NotificationsManagerImpl extends NotificationManager{
 
   @override
   Future<void> init() async {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    FirebaseMessaging.instance.subscribeToTopic(AppConstants.generalNotificationsTopic);
-    _notification.initialize(
-      onDidReceiveNotificationResponse: onNotificationTap,
-      onDidReceiveBackgroundNotificationResponse: onNotificationTap,
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/notifications'),
-        iOS: DarwinInitializationSettings(
-          requestSoundPermission: true,
-          requestAlertPermission: true,
-          requestBadgePermission: true,
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.instance.subscribeToTopic(AppConstants.generalNotificationsTopic);
+      await _notification.initialize(
+        onDidReceiveNotificationResponse: onNotificationTap,
+        onDidReceiveBackgroundNotificationResponse: onNotificationTap,
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/notifications'),
+          iOS: DarwinInitializationSettings(
+            requestSoundPermission: true,
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+          ),
         ),
-      ),
-    );
-    FirebaseMessaging.onMessage.listen((event) async {
-      await NotificationsManagerImpl().showNotification(message: event);
-    });
-    final NotificationAppLaunchDetails? notificationBackgroundDetails = await _notification.getNotificationAppLaunchDetails();
-    if(notificationBackgroundDetails!.didNotificationLaunchApp){
-      onNotificationTap(notificationBackgroundDetails.notificationResponse!);
+      );
+      FirebaseMessaging.onMessage.listen((event) async {
+        await NotificationsManagerImpl().showNotification(message: event);
+      });
+      final NotificationAppLaunchDetails? notificationBackgroundDetails = await _notification.getNotificationAppLaunchDetails();
+      if(notificationBackgroundDetails != null && notificationBackgroundDetails.didNotificationLaunchApp){
+        onNotificationTap(notificationBackgroundDetails.notificationResponse!);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Notification / Firebase initialization skipped: $e');
     }
   }
 
